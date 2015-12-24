@@ -3,18 +3,6 @@ import de.looksgood.ani.*;
 class Particle {
   
   Ani ani;
-  int trafficAlpha = 70;
-
-  int magenta = color(255, 0, 255, trafficAlpha);
-  int green = color(0, 255, 0, trafficAlpha);
-  int yellow = color(255, 255, 0, trafficAlpha);
-
-  float trafficRadius = 15;
-  int lineLength = 40;
-
-
-  int ownshipColor = magenta;
-  int trafficColor = green;
   int type = -1;
   int usingColor = -1;
 
@@ -70,11 +58,11 @@ class Particle {
       int zoomLevel = 11;
       usingColor = trafficColor;
       float delta =  altitude - ownshipAltitude;
-      if (delta <= Flight.LOWER_THRESHOLD) {
+      if (delta <= LOWER_THRESHOLD) {
         drawLower(x, y, abs(delta), zoomLevel, "");
       } else
       {
-        if (delta >= Flight.HIGHER_THRESHOLD)
+        if (delta >= HIGHER_THRESHOLD)
           drawHigher(x, y, abs(delta), zoomLevel, "");
         else
           drawImportant(x, y, altitude, zoomLevel, "");
@@ -95,11 +83,11 @@ class Particle {
 
   void drawLower(float x, float y, float delta, int zoomLevel, String callsign) {
     float c_delta = delta;
-    if (-delta <= -Flight.SEPARATION_THRESHOLD) 
-      c_delta = Flight.SEPARATION_THRESHOLD;
+    if (-delta <= -SEPARATION_THRESHOLD) 
+      c_delta = SEPARATION_THRESHOLD;
 
-    float blankSpace = (c_delta*(Flight.TRAFFIC_RADIUS-Flight.MINIMUM_INNER_RADIUS))/Flight.SEPARATION_THRESHOLD;
-    float inner_radius = Flight.TRAFFIC_RADIUS - blankSpace;
+    float blankSpace = (c_delta*(trafficRadius-minimumInnerRadiusTraffic))/SEPARATION_THRESHOLD;
+    float inner_radius = trafficRadius - blankSpace;
     
     noFill();
     stroke(usingColor);
@@ -115,10 +103,10 @@ class Particle {
   void drawHigher(float x, float y, float delta, int zoomLevel, String callsign) {
     float c_delta = delta;
 
-    if (delta >= Flight.SEPARATION_THRESHOLD) 
-      c_delta = Flight.SEPARATION_THRESHOLD;
+    if (delta >= SEPARATION_THRESHOLD) 
+      c_delta = SEPARATION_THRESHOLD;
 
-    float whiteRadius = (c_delta*12)/Flight.SEPARATION_THRESHOLD;
+    float whiteRadius = (c_delta*12)/SEPARATION_THRESHOLD;
 
     fill(ownshipColor);
     stroke(usingColor);

@@ -5,27 +5,7 @@ class Flight {
   public static final int OWNSHIP = 0;
   public static final int TRAFFIC = 1;
 
-  public static final float LOWER_THRESHOLD = -50.0;
-  public static final int SAME = -1;
-  public static final float HIGHER_THRESHOLD = 50.0;
-  public static final float SEPARATION_THRESHOLD = 500.0;
-  public static final int MINIMUM_INNER_RADIUS = 2;
 
-  public static final int TRAFFIC_RADIUS = 15;
-  public static final int MAXIMUM_INNER_RADIUS = TRAFFIC_RADIUS-MINIMUM_INNER_RADIUS;
-
-  int trafficAlpha = 200;
-
-  int magenta = color(255, 0, 255, trafficAlpha);
-  int green = color(0, 255, 0, trafficAlpha);
-  int yellow = color(255, 255, 0, trafficAlpha);
-
-  float trafficRadius = 15;
-  int lineLength = 40;
-
-
-  int ownshipColor = magenta;
-  int trafficColor = green;
   int type = -1;
   int usingColor = -1;
 
@@ -41,7 +21,8 @@ class Flight {
   public int relativeAltitude;
   private float ownshipAltitude;
   
-  PredictionHandler predictionHandler;
+ // PredictionHandler predictionHandler;
+  ClustersPredictionHandler predictionHandler;
   boolean predictionActive = false;
   boolean predictionRequested;
   public boolean particleActive = false;
@@ -57,13 +38,15 @@ class Flight {
   public Flight(int type, UnfoldingMap map) {
     this.type = type;
     this.map = map;
+    
     p = new Particle();
   }
   
   
   public void predictionRequested(UnfoldingMap map) {
     this.predictionActive = true;
-    this.predictionHandler = new PredictionHandler(map,this);
+    this.predictionHandler = new ClustersPredictionHandler(map,this);
+//    this.predictionHandler = new PredictionHandler(map,this);
   }
   
   
@@ -72,6 +55,12 @@ class Flight {
     this.predictionHandler.clean();
     this.predictionHandler = null;
     
+  }
+  
+  public void drawTime() {
+    if (this.predictionActive) {
+      this.predictionHandler.pulse();
+    }
   }
   
   public void draw(Location location, float altitude, float heading, float ownshipAltitude, float currentRot, int zoomLevel, String callsign) {
@@ -101,11 +90,11 @@ class Flight {
     case TRAFFIC:
       usingColor = trafficColor;
       float delta =  altitude - ownshipAltitude;
-      if (delta <= Flight.LOWER_THRESHOLD) {
+      if (delta <= LOWER_THRESHOLD) {
         drawLower(x, y, abs(delta), heading, currentRot, zoomLevel, callsign);
       } else
       {
-        if (delta >= Flight.HIGHER_THRESHOLD)
+        if (delta >= HIGHER_THRESHOLD)
           drawHigher(x, y, abs(delta), heading, currentRot, zoomLevel, callsign);
         else
           drawTraffic(x, y, altitude, heading, currentRot, zoomLevel, callsign);
@@ -168,12 +157,12 @@ class Flight {
     //println("delta is: "+delta);
     float c_delta = delta;
     float rot = getRot(heading-currentRot);
-    if (-delta <= -Flight.SEPARATION_THRESHOLD) 
-      c_delta = Flight.SEPARATION_THRESHOLD;
+    if (-delta <= -SEPARATION_THRESHOLD) 
+      c_delta = SEPARATION_THRESHOLD;
      
 
-    float blankSpace = (c_delta*(Flight.TRAFFIC_RADIUS-Flight.MINIMUM_INNER_RADIUS))/Flight.SEPARATION_THRESHOLD;
-    float inner_radius = Flight.TRAFFIC_RADIUS - blankSpace;
+    float blankSpace = (c_delta*(trafficRadius-minimumInnerRadiusTraffic))/SEPARATION_THRESHOLD;
+    float inner_radius = trafficRadius - blankSpace;
 
 
 
@@ -201,14 +190,14 @@ class Flight {
     //println("drawing higher for "+callsign);
     fill(ownshipColor);
     stroke(usingColor);
-    strokeWeight(2);
+    strokeWeight(trafficBorder);
     
     float c_delta = delta;
 
-    if (delta >= Flight.SEPARATION_THRESHOLD) 
-      c_delta = Flight.SEPARATION_THRESHOLD;
+    if (delta >= SEPARATION_THRESHOLD) 
+      c_delta = SEPARATION_THRESHOLD;
 
-    float whiteRadius = (c_delta*12)/Flight.SEPARATION_THRESHOLD;
+    float whiteRadius = (c_delta*(trafficRadius-trafficBorder))/SEPARATION_THRESHOLD;
     //float externalSrtroke = Flight.TRAFFIC_RADIUS - whiteRadius;
     //println("delta:"+delta);
     //println("whiteradius:"+whiteRadius);
@@ -229,7 +218,7 @@ class Flight {
     fill(usingColor);    
     text(callsign + " +" + delta, 0, 0+trafficRadius+5);
     rotate(radians(rot));
-    strokeWeight(2);
+    strokeWeight(trafficBorder);
     stroke(usingColor);
     line(0, 0, 0, -lineLength);
     popMatrix();
