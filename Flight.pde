@@ -4,10 +4,14 @@ class Flight {
 
   public static final int OWNSHIP = 0;
   public static final int TRAFFIC = 1;
+  public static final int RAD = 1;
+  public static final int DEG = 2;
 
 
   int type = -1;
   int usingColor = -1;
+  
+  private PVector speed; //vx, vy, vz
 
   Ani flightAni;
   public float x;
@@ -19,33 +23,31 @@ class Flight {
   public float altitude;
 
   public int relativeAltitude;
-  private float ownshipAltitude;
+  
+  
   
  // PredictionHandler predictionHandler;
   ClustersPredictionHandler predictionHandler;
   boolean predictionActive = false;
   boolean predictionRequested;
-  public boolean particleActive = false;
-  Particle p;
   
   String callsign;
-  
   Location location;
-  Location ownshipLocation;
-  UnfoldingMap map;
+  Manager m;
 
 
-  public Flight(int type, UnfoldingMap map) {
+  public Flight(int type, Manager manager) {
     this.type = type;
-    this.map = map;
+    this.m = manager;
+    this.location = new Location(0.0, 0.0);
+    this.altitude = 0.0;
+    this.speed = new PVector();
     
-    p = new Particle();
   }
-  
   
   public void predictionRequested(UnfoldingMap map) {
     this.predictionActive = true;
-    this.predictionHandler = new ClustersPredictionHandler(map,this);
+    this.predictionHandler = new ClustersPredictionHandler(this, this.m);
 //    this.predictionHandler = new PredictionHandler(map,this);
   }
   
@@ -63,16 +65,14 @@ class Flight {
     }
   }
   
-  public void draw(Location location, float altitude, float heading, float ownshipAltitude, float currentRot, int zoomLevel, String callsign) {
+  public void draw(String callsign) {
+    float heading = getHeading(FlightStatus.DEG);
     
-    this.altitude = altitude;
-    this.ownshipAltitude = ownshipAltitude;
     this.callsign = callsign;
-    this.location = location;
     ScreenPosition sp = map.getScreenPosition(location);
     this.x = sp.x;
-    this.y = sp.y;
-    draw(sp.x,sp.y,altitude,heading,ownshipAltitude,currentRot,zoomLevel,callsign);
+    this.y = sp.y; //<>//
+    draw(sp.x,sp.y,this.altitude,heading,this.m.ownship.altitude,this.m.current_rot,this.m.map.getZoomLevel(),callsign);
   }
 
 
@@ -126,6 +126,38 @@ class Flight {
 
     if (heading > 180) return -(360-heading);
     else return heading;
+  }
+  
+  public void setSpeed(PVector speed) {
+    this.speed = speed;
+  }
+  
+  public void setLocation(Location location, float altitude) {
+    this.location = location;
+    this.altitude = altitude;
+  }
+  
+  public void setStatus(float lat,float lon,float h,float vx,float vy,float vz) {
+    this.location.setLat(lat);
+    this.location.setLon(lon);
+    this.altitude = h;
+    this.speed.x = vx;
+    this.speed.y = vy;
+    this.speed.z = vz;
+  }
+  
+   public float getHeading(int unit) {
+    if (this.speed == null) return 0.0f;
+    
+    float vx = this.speed.x;
+    float vy = this.speed.y;
+    if (vx == 0.0 && vy == 0.0)
+      return 0.0f;
+
+    float rotAngle = (float) Math.acos(vy/(Math.sqrt(Math.pow(vx,2)+Math.pow(vy,2)))) * (float) (vx/Math.abs(vx));
+    if (unit == this.RAD) return rotAngle;
+    else
+      return rotAngle * (180/(float)Math.PI);
   }
 
   
@@ -224,20 +256,7 @@ class Flight {
     popMatrix();
   }
   
-  public void particle() {
-    particleActive = (!particleActive);
-    
-    p.x = this.x;
-    p.y = this.y;
-    p.altitude = this.ownshipAltitude;
-    p.ownshipAltitude = this.ownshipAltitude;
-    //p.animate(mouseX,mouseY);
-    
-      
-      //(java.lang.Object theTarget, float theDuration, float theDelay, java.lang.String theFieldName, float theEnd) 
-      //this.flightAni = Ani.from(this, 1.0, 0.0, "x", random(0,width));
-      //this.flightAni = Ani.from(this, 1.0, 0.0, "y", random(0,height));
-    
-    this.flightAni = Ani.to(this, 1.0, "trafficRadius", random(10, 90));
-  }
+  
+  
+  
 }

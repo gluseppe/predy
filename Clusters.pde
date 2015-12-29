@@ -7,7 +7,7 @@ class Cluster {
   int type = -1;
   int usingColor = -1;
 
-  float x,y,altitude,size,ownshipAltitude,uncertainty;
+  float x,y,altitude,size,uncertainty;
   float bubble_radius;
   float end_x, end_y;
   float horizon;
@@ -17,24 +17,13 @@ class Cluster {
   //it is needed for the animation, we use it as starting point of the animation
   Location flightLocation;
   Location clusterLocation;
-  UnfoldingMap map;
+  Manager m;
   
-  public Cluster(float x, float y, float altitude, float ownshipAltitude, UnfoldingMap map) {
-    this.x = x;
-    this.y = y;
-    this.altitude = altitude;
-    this.ownshipAltitude = ownshipAltitude;
-    this.map = map;
-    this.bubble_radius = 0.0;
-    //Ani.init(this);
-  }
-  
-  public Cluster(Location clusterLocation, Location flightLocation, float clusterAltitude, float ownshipAltitude, UnfoldingMap map) {
+  public Cluster(Location clusterLocation, float clusterAltitude, Location flightLocation, Manager manager) {
+    this.m = manager;
     this.clusterLocation = clusterLocation;
     this.flightLocation = flightLocation;
     this.altitude = clusterAltitude;
-    this.ownshipAltitude = ownshipAltitude;
-    this.map = map;
     this.sp = map.getScreenPosition(flightLocation);
     this.x = sp.x;
     this.y = sp.y;
@@ -43,19 +32,10 @@ class Cluster {
     
   }
   
-  public Cluster(Location flightLocation, UnfoldingMap map) {
-    this.flightLocation = flightLocation;
-    this.map = map;
-    this.bubble_radius = 0.0;
-   //nothing to do here, but if you use this constructor you will have to set up x,y,altitude and ownship altitude 
-  }
   
-  
-  
-  public void draw(Location clusterLocation, float clusterAltitude, float ownshipAltitude) {
+  public void draw(Location clusterLocation, float clusterAltitude) {
     this.clusterLocation = clusterLocation;
     this.altitude = clusterAltitude;
-    this.ownshipAltitude = ownshipAltitude;
     draw();
   }
   
@@ -87,7 +67,7 @@ class Cluster {
     
       int zoomLevel = 11;
       usingColor = trafficColor;
-      float delta =  altitude - ownshipAltitude;
+      float delta =  altitude - this.m.ownship.altitude;
       if (delta <= LOWER_THRESHOLD) {
         drawLower(x, y, abs(delta), zoomLevel, "");
       } else
@@ -167,12 +147,20 @@ class Cluster {
   //prediction handler will call each clusters.pulse accordingly to the associate time horizon
   //it will convey an animation of a series of clusters pulsing
   public void pulse() {
-    float delay = this.horizon / 2000;
-    ani = new Ani(this, 0.5, delay, "bubble_radius", this.size);
-    ani.repeat(3);
+    float delay = this.horizon / 80;
+    AniSequence seq = new AniSequence(this.m.applet);
+    seq.beginSequence();
+      seq.add(new Ani(this, 0.3, delay, "bubble_radius", this.size, Ani.EXPO_OUT,"onEnd:pulseBack"));
+      //seq.add(new Ani(this, 1.0, "bubble_radius", 0.0));
+    seq.endSequence();
+    seq.start();
+    
+    //ani.repeat(1);
     //Ani.to(this, 0.5, delay, "bubble_radius", this.size);
-    
-    
+  }
+  
+  public void pulseBack() {
+    Ani.to(this,0.2,"bubble_radius",0);
   }
   
   /**

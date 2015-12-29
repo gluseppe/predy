@@ -1,4 +1,4 @@
-import de.fhpotsdam.unfolding.providers.*; //<>// //<>// //<>// //<>//
+import de.fhpotsdam.unfolding.providers.*; //<>// //<>// //<>// //<>// //<>//
 import de.fhpotsdam.unfolding.utils.MapUtils;
 import de.fhpotsdam.unfolding.UnfoldingMap;
 import de.fhpotsdam.unfolding.geo.Location;
@@ -28,15 +28,16 @@ private int updatePeriodSeconds = 1;
 private int updatePeriod = updatePeriodSeconds * 1000;
 PVector rotateCenter;
 
+Manager m;
 Location ownshipLocation = null;
-FlightStatus ownship = null;
 float current_rot = 0.0f;
 
-Flight ownshipFlight;
+Flight ownship;
 //variables in request traffic
 JSONObject jTraffic;
 String callsign;
-HashMap traffic;
+StringList trafficList;
+//HashMap traffic;
 
 //end variables for request traffic
 
@@ -53,6 +54,8 @@ void setup() {
   //map.setTweening(true);
   Location parisLocation = new Location(48.864716f, 2.349014f);
   map.zoomAndPanTo(9, parisLocation);
+  this.m = new Manager(this,map);
+  this.trafficList = new StringList(); 
   //float maxPanningDistance = 30; // in km
   //map.setPanningRestriction(berlinLocation, maxPanningDistance);
 }
@@ -102,46 +105,60 @@ void launchRequestsIfNeeded() {
 void updateUIIfNeeded() {
   if (this.ownship !=null)
   {
-    Location loc = this.ownship.getLocation();
+    Location loc = this.ownship.location;
     map.panTo(loc);
-    drawOwnship(this.ownship, 11, "ownship");
+    drawOwnship(this.ownship, "ownship");
     drawTraffic();
-    drawPrediction();
-    rotateMap(true, this.ownship);
+    rotateMap(this.ownship);
   } else {
     println("ownship location was null");
   }
 }
 
 void keyPressed() {
-  if (key == SPACEBAR) {
-    activePrediction = ! activePrediction;
-  }
+  if (key==CODED)
+   {
+     switch(keyCode) {
+       case BACKSPACE: break;
+       case RIGHT: {
+         
+         break;
+       }
+     }
+     
+   }
+   else
+   {
+     switch(key) {
+       case ' ': { 
+         activePrediction = ! activePrediction;
+         break;
+       }
+     }
+   }
+       
+  
+  
 }
 
 //END TOP LEVEL FUNCTIONS
 
 //DRAWING FUNCTIONS
 
-void drawOwnship(FlightStatus ownship, int zoomLevel, String callsign) {
-  
-  Location loc = this.ownship.getLocation();
-  //ScreenPosition sp = map.getScreenPosition(loc);
-  Flight ownshipFlight = new Flight(Flight.OWNSHIP,map);
-  
-  //draw(float x, float y, float altitude, float heading, float ownshipAltitude, float currentRot, int zoomLevel, String callsign) {
-  ownshipFlight.draw(loc, this.ownship.h, 0.0f,0.0f,0.0f,zoomLevel,"OWNSHIP");
+void drawOwnship(Flight ownship, String callsign) {
+  ownship.draw("OWNSHIP");
 }
 
 
-void drawIntruderFlight(Location location, float altitude, float heading, int zoomLevel, String callsign) {
-  Flight aTraffic = new Flight(Flight.TRAFFIC,map);
-  aTraffic.draw(location,altitude,heading,this.ownship.h,current_rot,zoomLevel,callsign);
+void drawIntruderFlight(float lat, float lon, float altitude, float vx, float vy, float vz, String callsign) {
+  Flight aTraffic = new Flight(Flight.TRAFFIC,this.m);
+  aTraffic.setStatus(lat,lon,altitude,vx,vy,vz);
+  aTraffic.draw(callsign);
 }
 
 void drawTraffic() {
   if (jTraffic != null) {
-    float lat, lon, h, vx, vy, t_heading;
+    float lat, lon, h, vx, vy, vz, t_heading;
     String cs;
     JSONObject fs;
     Iterator i = jTraffic.keyIterator();
@@ -150,27 +167,24 @@ void drawTraffic() {
     while (i.hasNext()) {
 
       cs = (String) i.next();
+      this.trafficList.appendUnique(cs);
       fs = jTraffic.getJSONObject(cs);
-
-
       lat = fs.getFloat("lat");
       lon = fs.getFloat("lon");
       h = fs.getFloat("h")*METERS_TO_FEET;
       vx = fs.getFloat("vx");
       vy = fs.getFloat("vy");
+      vz = fs.getFloat("vz");
       t_heading = getHeading(FlightStatus.DEG, vx, vy);
       
       
       //sp = map.getScreenPosition(new Location(lat, lon));
 
-      drawIntruderFlight(new Location(lat,lon), h, t_heading, 11, cs);
+      drawIntruderFlight(lat, lon, h, vx, vy, vz, cs);
     }
   }
 }
 
-
-void drawPrediction() {
-}
 
 //END DRAWING FUNCTIONS
 
@@ -183,10 +197,10 @@ float getRot(float heading) {
   else return heading;
 }
 
-public void rotateMap(boolean rotate, FlightStatus ownship) {
+public void rotateMap(Flight ownship) {
 
   float oHead = this.ownship.getHeading(FlightStatus.DEG);
-  ScreenPosition sp = map.getScreenPosition(ownship.getLocation());
+  ScreenPosition sp = map.getScreenPosition(ownship.location);
   map.mapDisplay.setInnerTransformationCenter(sp);
   //float rot = getRot(oHead);
   float d = oHead - current_rot;
@@ -195,6 +209,7 @@ public void rotateMap(boolean rotate, FlightStatus ownship) {
   map.rotate(-radians(rot));
 
   this.current_rot = oHead;
+  this.m.current_rot = this.current_rot;
 }
 
 public float getHeading(int unit, float vx, float vy) {
@@ -202,7 +217,7 @@ public float getHeading(int unit, float vx, float vy) {
     return 0.0f;
 
   float rotAngle = (float) Math.acos(vy/(Math.sqrt(Math.pow(vx, 2)+Math.pow(vy, 2)))) * (float) (vx/Math.abs(vx));
-  if (unit == FlightStatus.RAD) return rotAngle;
+  if (unit == Flight.RAD) return rotAngle;
   else
     return rotAngle * (180/(float)Math.PI);
 }
@@ -243,8 +258,10 @@ void requestOwnship() {
   } else
   {
     println("ownship created");
-    ownshipLocation = new Location(jOwnship.getFloat("lat"), jOwnship.getFloat("lon"));
-    this.ownship = new FlightStatus(ownshipLocation, jOwnship.getFloat("h"), new PVector(jOwnship.getFloat("vx"), jOwnship.getFloat("vy"), jOwnship.getFloat("vz")));
+    //ownshipLocation = new Location(jOwnship.getFloat("lat"), jOwnship.getFloat("lon"));
+    this.ownship = new Flight(Flight.OWNSHIP,this.m);
+    this.m.ownship = this.ownship;
+    this.ownship.setStatus(jOwnship.getFloat("lat"), jOwnship.getFloat("lon"), jOwnship.getFloat("h"), jOwnship.getFloat("vx"), jOwnship.getFloat("vy"), jOwnship.getFloat("vz"));
   }
   //<>//
 }
