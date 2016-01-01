@@ -45,7 +45,7 @@ class Flight {
     
   }
   
-  public void predictionRequested(UnfoldingMap map) {
+  public void predictionRequested() {
     this.predictionActive = true;
     this.predictionHandler = new ClustersPredictionHandler(this, this.m);
 //    this.predictionHandler = new PredictionHandler(map,this);

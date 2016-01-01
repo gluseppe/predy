@@ -5,6 +5,8 @@ class Manager {
   public Flight ownship;
   public float current_rot;
   public PApplet applet;
+  public HashMap<String,Flight> traffic;
+  
   
   
   public Manager(PApplet applet, UnfoldingMap map) {

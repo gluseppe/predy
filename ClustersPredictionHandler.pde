@@ -23,7 +23,9 @@ class ClustersPredictionHandler {
     this.arrParticles = new ArrayList();
     this.mapClusters = new HashMap();
     this.ownshipClusters = new HashMap();
-    this.prediction = loadJSONObject("clusters_ownship/C3PO.json");
+    String flight_request = "flight_id="+flight.callsign;
+    println("ClustersPredictionHandler: loading json object from " + SERVER + PREDICTION_BRANCH + "?" + flight_request + "&deltaT=" + str(DELTA_T)+"&nsteps="+str(N_STEPS)+"&raw="+RAW+"&cluster="+CLUSTER);
+    this.prediction = loadJSONObject(SERVER + PREDICTION_BRANCH + "?" + flight_request + "&deltaT=" + str(DELTA_T)+"&nsteps="+str(N_STEPS)+"&raw="+RAW+"&cluster="+CLUSTER);
     loadPrediction();
   }
 
@@ -84,7 +86,7 @@ class ClustersPredictionHandler {
     for (Integer time : this.ownshipClusters.keySet()) {
       Cluster c = this.ownshipClusters.get(time);
       if (cont == 0) {
-          ScreenPosition osp = map.getScreenPosition(ownshipLocation);
+          ScreenPosition osp = map.getScreenPosition(this.m.ownship.location);
           vertex.add(new ScreenPosition(osp.x,osp.y));
           vertex.add(new ScreenPosition(osp.x,osp.y));
       }

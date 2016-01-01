@@ -10,17 +10,6 @@ import java.util.Iterator;
 UnfoldingMap map;
 
 
-public static final String ACCESS_TOKEN = "pk.eyJ1IjoiZ2x1c2VwcGUiLCJhIjoiY2lnODVuOHEyMDdyeHZrbHgxd3YxaHd3MCJ9.y3I1ac6f8QhOeaQgmHknEA";
-public static final String MAP_ID = "gluseppe.581d9fd9";
-public static final String SERVER = "http://127.0.0.1:8080/";
-public static final String TRAFFIC_BRANCH = "traffic?item=traffic";
-public static final String OWNSHIP_BRANCH = "traffic?item=myState";
-public static final String PREDICTION_BRANCH = "prediction";
-public static final char SPACEBAR = ' ';
-public static final float METERS_TO_FEET = 3.2808399;
-
-public static final String OWNSHIP_REQ_URL = SERVER+OWNSHIP_BRANCH;
-public static final String TRAFFIC_REQ_URL = SERVER+TRAFFIC_BRANCH;
 
 private int elapsedTime = -1;
 private int lastUpdate = 0;
@@ -37,12 +26,15 @@ Flight ownship;
 JSONObject jTraffic;
 String callsign;
 StringList trafficList;
-//HashMap traffic;
+int currentTrafficIndex;
+
+HashMap<String,Flight> traffic;
 
 //end variables for request traffic
 
 //graphic setup variables
 boolean activePrediction = false;
+String predictionActiveFor;
 
 //end graphics
 
@@ -58,6 +50,9 @@ void setup() {
   this.trafficList = new StringList(); 
   //float maxPanningDistance = 30; // in km
   //map.setPanningRestriction(berlinLocation, maxPanningDistance);
+  this.currentTrafficIndex = -1;
+  this.traffic = new HashMap();
+  Ani.init(this);
 }
 
 
@@ -110,55 +105,69 @@ void updateUIIfNeeded() {
     drawOwnship(this.ownship, "ownship");
     drawTraffic();
     rotateMap(this.ownship);
+    drawSelectedFlight();
+    drawScale(loc);
+    
   } else {
     println("ownship location was null");
   }
 }
 
-void keyPressed() {
-  if (key==CODED)
-   {
-     switch(keyCode) {
-       case BACKSPACE: break;
-       case RIGHT: {
-         
-         break;
-       }
-     }
-     
-   }
-   else
-   {
-     switch(key) {
-       case ' ': { 
-         activePrediction = ! activePrediction;
-         break;
-       }
-     }
-   }
-       
-  
-  
-}
 
 //END TOP LEVEL FUNCTIONS
 
 //DRAWING FUNCTIONS
-
 void drawOwnship(Flight ownship, String callsign) {
   ownship.draw("OWNSHIP");
 }
 
 
+void drawSelectedFlight() {
+  String selectedFlight = "'z'< use keys >'m'";
+  if (currentTrafficIndex != -1)
+    selectedFlight = trafficList.get(currentTrafficIndex);
+    
+  stroke(color(255,255,255));
+  strokeWeight(3);
+  fill(255,255,255);
+  text("Selected:"+selectedFlight, 100, height-50);
+}
+
+void drawScale(Location l) {
+  float z = map.getZoomLevel();
+  float earthC = 40075000;
+  float d_px = earthC * cos(radians(l.getLat()))/pow(2,z+8);
+  stroke(color(255,255,255));
+  strokeWeight(3);
+  fill(255,255,255);
+  line(width-300,height-50,width-200,height-50);
+  text(str(d_px*100) + " meters", width-230,height-60);
+}
+
+
+
 void drawIntruderFlight(float lat, float lon, float altitude, float vx, float vy, float vz, String callsign) {
-  Flight aTraffic = new Flight(Flight.TRAFFIC,this.m);
-  aTraffic.setStatus(lat,lon,altitude,vx,vy,vz);
-  aTraffic.draw(callsign);
+  if (traffic.containsKey(callsign)) {
+    Flight f = traffic.get(callsign);
+    f.setStatus(lat,lon,altitude,vx,vy,vz);
+    f.draw(callsign);
+  }
+  else
+  {
+    Flight aTraffic = new Flight(Flight.TRAFFIC,this.m);
+    aTraffic.setStatus(lat,lon,altitude,vx,vy,vz);
+    traffic.put(callsign,aTraffic);
+    aTraffic.draw(callsign);
+    
+  }
+  
+  
+  //println("number of flights:" + str(traffic.size()));
 }
 
 void drawTraffic() {
   if (jTraffic != null) {
-    float lat, lon, h, vx, vy, vz, t_heading;
+    float lat, lon, h, vx, vy, vz;
     String cs;
     JSONObject fs;
     Iterator i = jTraffic.keyIterator();
@@ -175,8 +184,6 @@ void drawTraffic() {
       vx = fs.getFloat("vx");
       vy = fs.getFloat("vy");
       vz = fs.getFloat("vz");
-      t_heading = getHeading(FlightStatus.DEG, vx, vy);
-      
       
       //sp = map.getScreenPosition(new Location(lat, lon));
 
@@ -271,3 +278,67 @@ void requestPrediction() {
 } //<>//
 
 //END THREAD FUNCTIONS
+
+
+
+void keyPressed() {
+  if (key==CODED)
+   {
+     switch(keyCode) {
+       case BACKSPACE: break;
+       
+   }
+     
+   }
+   else
+   {
+     switch(key) {
+       case ' ': { 
+         activePrediction = ! activePrediction;
+         if (activePrediction) {
+           if (currentTrafficIndex!= -1)
+           {
+             println("activating prediction");
+             Flight f = traffic.get(trafficList.get(currentTrafficIndex));
+             f.predictionRequested();
+             predictionActiveFor = f.callsign;
+           }
+         }
+         else {
+           Flight f = traffic.get(predictionActiveFor);
+           f.stopPrediction();
+           predictionActiveFor = null;
+           
+         }
+         break;
+       }
+       case 'm': {
+         if (trafficList.size() > 0) 
+           currentTrafficIndex = (currentTrafficIndex + 1) % trafficList.size();
+         break;
+       }
+       case 'z': {
+         if (trafficList.size() > 0) {
+           currentTrafficIndex = currentTrafficIndex - 1;
+           if (currentTrafficIndex <= -1)
+             currentTrafficIndex = trafficList.size()-1;
+         }
+         break;
+       }
+       case 'p': 
+       {
+         //if (this.currentPredictedTraffic != null) {
+         // this.currentPredictedTraffic.drawTime();
+         //}
+         if (predictionActiveFor != null) {
+           Flight f = traffic.get(predictionActiveFor);
+           f.drawTime();
+         }
+         break; 
+       }
+     }
+   }
+       
+  
+  
+}
