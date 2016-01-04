@@ -1,4 +1,4 @@
-import de.fhpotsdam.unfolding.providers.*; //<>// //<>// //<>// //<>// //<>//
+import de.fhpotsdam.unfolding.providers.*; //<>// //<>// //<>// //<>// //<>// //<>//
 import de.fhpotsdam.unfolding.utils.MapUtils;
 import de.fhpotsdam.unfolding.UnfoldingMap;
 import de.fhpotsdam.unfolding.geo.Location;
@@ -137,11 +137,12 @@ void drawScale(Location l) {
   float z = map.getZoomLevel();
   float earthC = 40075000;
   float d_px = earthC * cos(radians(l.getLat()))/pow(2,z+8);
+  int d_px_i = int(d_px);
   stroke(color(255,255,255));
   strokeWeight(3);
   fill(255,255,255);
   line(width-300,height-50,width-200,height-50);
-  text(str(d_px*100) + " meters", width-230,height-60);
+  text(str(d_px_i*100) + " meters", width-230,height-60);
 }
 
 
@@ -206,7 +207,7 @@ float getRot(float heading) {
 
 public void rotateMap(Flight ownship) {
 
-  float oHead = this.ownship.getHeading(FlightStatus.DEG);
+  float oHead = this.ownship.getHeading(Flight.DEG);
   ScreenPosition sp = map.getScreenPosition(ownship.location);
   map.mapDisplay.setInnerTransformationCenter(sp);
   //float rot = getRot(oHead);
@@ -270,12 +271,12 @@ void requestOwnship() {
     this.m.ownship = this.ownship;
     this.ownship.setStatus(jOwnship.getFloat("lat"), jOwnship.getFloat("lon"), jOwnship.getFloat("h"), jOwnship.getFloat("vx"), jOwnship.getFloat("vy"), jOwnship.getFloat("vz"));
   }
-  //<>//
+  //<>// //<>//
 }
 
 
 void requestPrediction() {
-} //<>//
+} //<>// //<>//
 
 //END THREAD FUNCTIONS
 

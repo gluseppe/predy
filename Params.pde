@@ -28,10 +28,11 @@ String CLUSTER = "true";
   int yellow = color(255, 255, 0, trafficAlpha);
   int ownshipColor = magenta;
   int trafficColor = green;
+  int predictionColor = color(0,140,0,trafficAlpha);
 
   //SHAPES AND DIMENSIONS
-  float trafficRadius = 10;
-  float clusterRadius = 15;
+  float trafficRadius = 15;
+  float clusterRadius = 20;
   float clusterBorder = 3;
   float trafficBorder = 3;
   float minimumInnerRadiusTraffic = 2;
@@ -44,6 +45,8 @@ String CLUSTER = "true";
   final float HIGHER_THRESHOLD = 50.0;
   final float SEPARATION_THRESHOLD = 500.0;
   final float MINIMUM_INNER_RADIUS = 2;
+  
+  final int LINESPACE = 18;
 
 
   float earthC = 40075000;

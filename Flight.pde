@@ -66,12 +66,12 @@ class Flight {
   }
   
   public void draw(String callsign) {
-    float heading = getHeading(FlightStatus.DEG);
+    float heading = getHeading(Flight.DEG);
     
     this.callsign = callsign;
     ScreenPosition sp = map.getScreenPosition(location);
     this.x = sp.x;
-    this.y = sp.y; //<>//
+    this.y = sp.y; //<>// //<>//
     draw(sp.x,sp.y,this.altitude,heading,this.m.ownship.altitude,this.m.current_rot,this.m.map.getZoomLevel(),callsign);
   }
 
@@ -115,7 +115,8 @@ class Flight {
     pushMatrix();
     translate(x, y);
     ellipse(0, 0, trafficRadius, trafficRadius);
-    text(callsign + " " + altitude, 0, 0+trafficRadius+5);
+    text(callsign, 0+5, 0+trafficRadius+5);
+    text("@" + int(altitude) + "ft", 0+5, 0+trafficRadius+LINESPACE);
     stroke(usingColor);
     strokeWeight(2);
     line(0, 0, 0, -lineLength);
@@ -155,7 +156,7 @@ class Flight {
       return 0.0f;
 
     float rotAngle = (float) Math.acos(vy/(Math.sqrt(Math.pow(vx,2)+Math.pow(vy,2)))) * (float) (vx/Math.abs(vx));
-    if (unit == this.RAD) return rotAngle;
+    if (unit == Flight.RAD) return rotAngle;
     else
       return rotAngle * (180/(float)Math.PI);
   }
@@ -167,12 +168,18 @@ class Flight {
     stroke(usingColor);
     strokeWeight(2);
     float rot = getRot(heading-currentRot);
+    float delta = altitude - m.ownship.altitude;
 
     pushMatrix();
     translate(x, y);
     ellipse(0, 0, trafficRadius, trafficRadius);
     fill(usingColor);
-    text(callsign + " " + heading, 0, 0+trafficRadius+5);
+    
+    text(callsign, 0+5, 0+trafficRadius+5);
+    fill(ownshipColor);
+    text("@" + int(delta) + "ft", 0+5, 0+trafficRadius+LINESPACE);
+    fill(usingColor);
+    //text(callsign + " " + heading, 0, 0+trafficRadius+5);
     rotate(radians(rot));
     stroke(usingColor);
     strokeWeight(2);
@@ -211,7 +218,11 @@ class Flight {
     stroke(usingColor);
     fill(usingColor);
     strokeWeight(2);
-    text(callsign + " -" + delta, 0, 0+trafficRadius+5);
+    
+    text(callsign, 0+5, 0+trafficRadius+5);
+    text("@-" + int(delta) + "ft", 0+5, 0+trafficRadius+LINESPACE);
+    
+    //text(callsign + " -" + delta, 0, 0+trafficRadius+5);
     rotate(radians(rot));
     fill(usingColor);
     line(0, 0, 0, -lineLength);
@@ -248,7 +259,9 @@ class Flight {
     noStroke();
     ellipse(0, 0, whiteRadius, whiteRadius);
     fill(usingColor);    
-    text(callsign + " +" + delta, 0, 0+trafficRadius+5);
+    text(callsign, 0+5, 0+trafficRadius+5);
+    text("@+" + int(delta) + "ft", 0+5, 0+trafficRadius+LINESPACE);
+    //text(callsign + " +" + delta, 0, 0+trafficRadius+5);
     rotate(radians(rot));
     strokeWeight(trafficBorder);
     stroke(usingColor);

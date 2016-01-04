@@ -59,7 +59,7 @@ class ClustersPredictionHandler {
       }
       
       noFill();
-      stroke(color(0,255,0));
+      stroke(trafficColor);
       strokeWeight(2);
       beginShape();
       cont = 0;

@@ -12,6 +12,7 @@ class Cluster {
   float end_x, end_y;
   float horizon;
   ScreenPosition sp;
+  float timeAlpha;
   
   //flightlocation is the location of the flight to which the cluster/particle belongs
   //it is needed for the animation, we use it as starting point of the animation
@@ -28,6 +29,8 @@ class Cluster {
     this.x = sp.x;
     this.y = sp.y;
     this.bubble_radius = 0.0;
+    this.timeAlpha = 0.0;
+    this.horizon = 0.0;
     
     
   }
@@ -79,14 +82,21 @@ class Cluster {
       }
       
     drawUncertaintyRing(x,y);
+    drawTimeIndication(x,y);
   }
   
   
   void drawUncertaintyRing(float x, float y) {
     noFill();
     strokeWeight(clusterBorder + 2);
-    stroke(color(0,255,0, 100));
+    stroke(predictionColor);
     ellipse(x,y,this.bubble_radius,this.bubble_radius);
+  }
+  
+  void drawTimeIndication(float x, float y) {
+    fill(color(0,255,0,timeAlpha));
+    strokeWeight(2);
+    text(int(this.horizon) + "secs", x+5, y+clusterRadius);
   }
    
   
@@ -95,7 +105,7 @@ class Cluster {
   void drawImportant(float x, float y, float altitude, int zoomLevel, String callsign) {
     
     fill(ownshipColor);
-    stroke(usingColor);
+    stroke(predictionColor);
     strokeWeight(clusterBorder);
     ellipse(x, y, clusterRadius, clusterRadius);
     
@@ -112,7 +122,7 @@ class Cluster {
     float inner_radius = clusterRadius - blankSpace;
     
     noFill();
-    stroke(usingColor);
+    stroke(predictionColor);
     strokeWeight(clusterBorder);
 
     ellipse(x, y, clusterRadius, clusterRadius);
@@ -133,7 +143,7 @@ class Cluster {
     float whiteRadius = (c_delta*(clusterRadius-clusterBorder))/SEPARATION_THRESHOLD;
     
     fill(ownshipColor);
-    stroke(usingColor);
+    stroke(predictionColor);
     strokeWeight(clusterBorder);
     ellipse(x, y, clusterRadius, clusterRadius);
     noStroke();
@@ -148,18 +158,31 @@ class Cluster {
   //it will convey an animation of a series of clusters pulsing
   public void pulse() {
     float delay = this.horizon / 80;
-    AniSequence seq = new AniSequence(this.m.applet);
-    seq.beginSequence();
-      seq.add(new Ani(this, 0.3, delay, "bubble_radius", this.size, Ani.EXPO_OUT,"onEnd:pulseBack"));
-      //seq.add(new Ani(this, 1.0, "bubble_radius", 0.0));
-    seq.endSequence();
-    seq.start();
+    growRing(delay);
+    fadeInTime(delay);
     
     //ani.repeat(1);
     //Ani.to(this, 0.5, delay, "bubble_radius", this.size);
   }
   
-  public void pulseBack() {
+  public void fadeInTime(float delay) {
+    Ani.to(this, 0.3, delay, "timeAlpha",255,Ani.EXPO_OUT,"onEnd:fadeOutTime");
+  }
+  
+  public void fadeOutTime() {
+    Ani.to(this,2.5,"timeAlpha",0);
+  }
+  
+  public void growRing(float delay) {
+    AniSequence seq = new AniSequence(this.m.applet);
+    seq.beginSequence();
+      seq.add(new Ani(this, 0.3, delay, "bubble_radius", this.size, Ani.EXPO_OUT,"onEnd:shrinkRing"));
+      //seq.add(new Ani(this, 1.0, "bubble_radius", 0.0));
+    seq.endSequence();
+    seq.start();
+  }
+  
+  public void shrinkRing() {
     Ani.to(this,0.2,"bubble_radius",0);
   }
   
