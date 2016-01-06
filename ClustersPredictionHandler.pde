@@ -83,7 +83,10 @@ class ClustersPredictionHandler {
   void drawOwnshipPrediction() {
     int cont = 0;
     ArrayList<ScreenPosition> vertex = new ArrayList();
-    for (Integer time : this.ownshipClusters.keySet()) {
+    
+    //for (Integer time : this.ownshipClusters.keySet()) { //<>//
+    for (int time=DELTA_T;time<=DELTA_T*N_STEPS;time=time+DELTA_T) {
+      println("time:"+str(time));
       Cluster c = this.ownshipClusters.get(time);
       if (cont == 0) {
           ScreenPosition osp = map.getScreenPosition(this.m.ownship.location);

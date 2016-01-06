@@ -35,10 +35,16 @@ HashMap<String,Flight> traffic;
 //graphic setup variables
 boolean activePrediction = false;
 String predictionActiveFor;
+PrintWriter log_file = null;
+DisposeHandler dh = null;
+boolean sagatMode = false;
 
 //end graphics
 
 void setup() {
+  
+  log_file = createWriter(str(year())+"-"+str(month())+"-"+str(day())+"_"+str(hour())+"-"+str(minute())+"-"+str(second())+"_"+"perceived_conflicts.txt");
+  dh = new DisposeHandler(this);
   //size(800,600,P2D);
   fullScreen(P2D, 1);
   map = new UnfoldingMap(this, new PMapBoxProvider(MAP_ID, ACCESS_TOKEN));
@@ -63,24 +69,26 @@ void draw() {
 
   map.draw();
 
-  launchRequestsIfNeeded();
+  drawCursor();
+  if (!sagatMode)
+  {
+    launchRequestsIfNeeded();
+    //checks if request threads returned, if so, updates interface
+    updateUIIfNeeded();
+  }
+}
+
+
+//TOP LEVEL FUNCTIONS
+
+void drawCursor() {
   Location location = map.getLocation(mouseX, mouseY);
   fill(0);
   text(location.getLat() + ", " + location.getLon(), mouseX, mouseY);
   fill(255, 0, 50, 50);
   noStroke();
   ellipse(mouseX, mouseY, 50, 50);
-
-  //Location parisLocation = new Location(48.864716f, 2.349014f);
-  //ScreenPosition test = map.getScreenPosition(parisLocation);
-  //fill(0,255,0,50);
-  //ellipse(test.x,test.y,50,50);
-  //checks if request threads returned, if so, updates interface
-  updateUIIfNeeded();
 }
-
-
-//TOP LEVEL FUNCTIONS
 
 void launchRequestsIfNeeded() {
   elapsedTime = millis();  //measures elapsed time from start of the program, convert in seconds
@@ -271,29 +279,29 @@ void requestOwnship() {
     this.m.ownship = this.ownship;
     this.ownship.setStatus(jOwnship.getFloat("lat"), jOwnship.getFloat("lon"), jOwnship.getFloat("h"), jOwnship.getFloat("vx"), jOwnship.getFloat("vy"), jOwnship.getFloat("vz"));
   }
-  //<>// //<>//
+  //<>//
 }
 
 
 void requestPrediction() {
-} //<>// //<>//
+} //<>//
 
 //END THREAD FUNCTIONS
 
 
+void mouseClicked() {
+  Location l = map.getLocation(new ScreenPosition(mouseX,mouseY));
+  String intruder = "aFlight";
+  log_file.println(intruder + ";" +l.getLat()+ ";"+ l.getLon()+ ";" + mouseX + ";" + mouseY); 
+}
 
 void keyPressed() {
-  if (key==CODED)
-   {
-     switch(keyCode) {
-       case BACKSPACE: break;
-       
-   }
-     
-   }
-   else
-   {
+  
      switch(key) {
+       case BACKSPACE: {
+         this.sagatMode = !this.sagatMode;
+         break;
+       }
        case ' ': { 
          activePrediction = ! activePrediction;
          if (activePrediction) {
@@ -306,9 +314,11 @@ void keyPressed() {
            }
          }
          else {
-           Flight f = traffic.get(predictionActiveFor);
-           f.stopPrediction();
-           predictionActiveFor = null;
+           if (predictionActiveFor != null) {
+             Flight f = traffic.get(predictionActiveFor);
+             f.stopPrediction(); //NULL
+             predictionActiveFor = null;
+           }
            
          }
          break;
@@ -338,8 +348,21 @@ void keyPressed() {
          break; 
        }
      }
-   }
-       
-  
-  
+}
+
+
+public class DisposeHandler {
+   
+  DisposeHandler(PApplet pa)
+  {
+    pa.registerMethod("dispose", this);
+  }
+   
+  public void dispose()
+  {      
+    println("Closing sketch");
+    log_file.flush(); // Writes the remaining data to the file
+    log_file.close(); // Finishes the file
+    // Place here the code you want to execute on exit
+  }
 }
