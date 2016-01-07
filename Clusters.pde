@@ -13,6 +13,8 @@ class Cluster {
   float horizon;
   ScreenPosition sp;
   float timeAlpha;
+  float base_ring;
+  color clusterColor;
   
   //flightlocation is the location of the flight to which the cluster/particle belongs
   //it is needed for the animation, we use it as starting point of the animation
@@ -31,6 +33,8 @@ class Cluster {
     this.bubble_radius = 0.0;
     this.timeAlpha = 0.0;
     this.horizon = 0.0;
+    this.base_ring = 0.0;
+    this.clusterColor = ownshipColor;
     
     
   }
@@ -39,6 +43,7 @@ class Cluster {
   public void draw(Location clusterLocation, float clusterAltitude) {
     this.clusterLocation = clusterLocation;
     this.altitude = clusterAltitude;
+    
     draw();
   }
   
@@ -50,16 +55,12 @@ class Cluster {
   
   
   public void draw() {    
-    //fill(color(0,255,0,100));
-    //ellipse(x,y,20,20);
-   
-    
-    
-    //println("uncertainty:" + str(uncertainty));
-    //println("meters of pixel:" + str(metersOfPixel()));
-    //println("level:" + str(map.getZoomLevel()));
     this.size = this.uncertainty / metersOfPixel();
-    //clusterRadius = this.size;
+    this.base_ring = WARNING_RADIUS / metersOfPixel();
+    int alpha_sottraction = int((MAX_ALPHA_SOTTRACTION*this.uncertainty) / MAX_UNCERTAINTY);
+    if (alpha_sottraction >= MAX_ALPHA_SOTTRACTION) alpha_sottraction = MAX_ALPHA_SOTTRACTION;
+    //println("alpha sottraction:"+str(alpha_sottraction));
+    this.clusterColor = (ownshipColor & 0xffffff) | (255-alpha_sottraction << 24);
     
     //if you put this lines it won't animate, but it will draw them directly in the final position
     //and the position will be correct even after you move/zoom etc
@@ -104,10 +105,13 @@ class Cluster {
   //draws the traffic when it has about the same altitude
   void drawImportant(float x, float y, float altitude, int zoomLevel, String callsign) {
     
-    fill(ownshipColor);
+     
+    //fill(ownshipColor);
+    fill(this.clusterColor);
     stroke(predictionColor);
     strokeWeight(clusterBorder);
-    ellipse(x, y, clusterRadius, clusterRadius);
+    //ellipse(x, y, clusterRadius, clusterRadius);
+    ellipse(x, y, base_ring, base_ring);
     
   }
 
@@ -118,15 +122,16 @@ class Cluster {
     if (-delta <= -SEPARATION_THRESHOLD) 
       c_delta = SEPARATION_THRESHOLD;
 
-    float blankSpace = (c_delta*(clusterRadius-minimumInnerRadiusCluster))/SEPARATION_THRESHOLD;
-    float inner_radius = clusterRadius - blankSpace;
+
+    float blankSpace = (c_delta*(base_ring-minimumInnerRadiusCluster))/SEPARATION_THRESHOLD;
+    float inner_radius = base_ring - blankSpace;
     
     noFill();
     stroke(predictionColor);
     strokeWeight(clusterBorder);
 
-    ellipse(x, y, clusterRadius, clusterRadius);
-    fill(ownshipColor);
+    ellipse(x, y, base_ring, base_ring);
+    fill(this.clusterColor);
     noStroke();
     ellipse(x, y, inner_radius, inner_radius);
 
@@ -140,19 +145,18 @@ class Cluster {
       c_delta = SEPARATION_THRESHOLD;
     
     
-    float whiteRadius = (c_delta*(clusterRadius-clusterBorder))/SEPARATION_THRESHOLD;
+    float whiteRadius = (c_delta*(base_ring-clusterBorder))/SEPARATION_THRESHOLD;
     
-    fill(ownshipColor);
+    fill(this.clusterColor);
     stroke(predictionColor);
     strokeWeight(clusterBorder);
-    ellipse(x, y, clusterRadius, clusterRadius);
+    ellipse(x, y, base_ring, base_ring);
     noStroke();
     fill(color(80, 80, 80));
     ellipse(x, y, whiteRadius, whiteRadius);
     
     
   }
- 
   //called by clusters prediction handler to animate the uncertainty bubble of the cluster
   //prediction handler will call each clusters.pulse accordingly to the associate time horizon
   //it will convey an animation of a series of clusters pulsing

@@ -29,6 +29,9 @@ String CLUSTER = "true";
   int ownshipColor = magenta;
   int trafficColor = green;
   int predictionColor = color(0,140,0,trafficAlpha);
+  
+  int MAX_ALPHA_SOTTRACTION = 150;
+  int MAX_UNCERTAINTY = 5000;
 
   //SHAPES AND DIMENSIONS
   float trafficRadius = 15;
@@ -47,6 +50,8 @@ String CLUSTER = "true";
   final float MINIMUM_INNER_RADIUS = 2;
   
   final int LINESPACE = 18;
+  
+  final float WARNING_RADIUS = 800.0; //METERS
 
 
   float earthC = 40075000;
