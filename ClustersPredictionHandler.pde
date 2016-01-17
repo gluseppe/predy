@@ -1,6 +1,14 @@
 import de.looksgood.ani.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 class ClustersPredictionHandler {
+  
+  private int elapsedTime;
+  private int lastUpdate;
+  private int updatePeriodSeconds = 10;
+  private int updatePeriod = updatePeriodSeconds * 1000;
+  private int startTimer;
+
 
   
   //Flight is used to acquire starting position of the animation
@@ -9,8 +17,11 @@ class ClustersPredictionHandler {
   JSONObject clusters;
   JSONArray ownshipJClusters;
   ArrayList<Particle> arrParticles;
-  HashMap<String,ArrayList<Cluster>> mapClusters;
-  HashMap <Integer, Cluster> ownshipClusters;
+  //HashMap<String,ArrayList<Cluster>> mapClusters;
+  ConcurrentHashMap<String,ArrayList<Cluster>> mapClusters;
+  //HashMap <Integer, Cluster> ownshipClusters;
+  ConcurrentHashMap <Integer, Cluster> ownshipClusters;
+  //ConcurrentHashMap <String,ArrayList<Cluster>> cMapClusters;
   //int times[] = new int[]{30,60};
   //int times[] = new int[]{30, 60, 90, 120, 150, 180, 210, 240, 270, 300};
   int times[] = new int[]{60, 120, 180, 240, 300};
@@ -18,23 +29,47 @@ class ClustersPredictionHandler {
   Manager m;
 
   public ClustersPredictionHandler(Flight flight, Manager manager) {
+    //this.cMapClusters = new ConcurrentHashMap();
     this.m = manager;
     this.flight = flight;
     this.arrParticles = new ArrayList();
-    this.mapClusters = new HashMap();
-    this.ownshipClusters = new HashMap();
-    String flight_request = "flight_id="+flight.callsign;
-    println("ClustersPredictionHandler: loading json object from " + SERVER + PREDICTION_BRANCH + "?" + flight_request + "&deltaT=" + str(DELTA_T)+"&nsteps="+str(N_STEPS)+"&raw="+RAW+"&cluster="+CLUSTER);
-    this.prediction = loadJSONObject(SERVER + PREDICTION_BRANCH + "?" + flight_request + "&deltaT=" + str(DELTA_T)+"&nsteps="+str(N_STEPS)+"&raw="+RAW+"&cluster="+CLUSTER);
-    loadPrediction();
+    this.mapClusters = new ConcurrentHashMap();
+    this.ownshipClusters = new ConcurrentHashMap();
+    
+    
+    this.elapsedTime = -1;
+    this.lastUpdate = 0;
+    this.startTimer = millis();
+
+
+    
+    
+    thread("loadPredictionBridge");
+    
   }
 
 
   public void draw() {
+    updatePredictionIfINeed();
     drawPrediction();
     if (!animationDone) {
       animate();
       this.animationDone = true;
+    }
+  }
+  
+  void updatePredictionIfINeed() {
+    elapsedTime = millis() - this.startTimer;  //measures elapsed time from start of the program, convert in seconds
+    //if it's the time, request for new data
+    if (elapsedTime - lastUpdate > updatePeriod) {  
+    //if more than a 1 second is passed from last update, then it's time to update again the aircraft positions 
+      lastUpdate = elapsedTime;
+    //println("lastupdate:" + lastUpdate);
+    //update prediction with new request chain
+      thread("loadPredictionBridge");
+      //loadPrediction();
+    
+    
     }
   }
   
@@ -45,21 +80,27 @@ class ClustersPredictionHandler {
       
       ArrayList<ScreenPosition> vertex = new ArrayList();     
       int cont = 0;
-      for (Cluster c : cs) {
-        if (cont == 0) {
-          ScreenPosition fsp = map.getScreenPosition(c.flightLocation);
-          //we need to add it twice as the first one is not going to appear on the screen
-          vertex.add(new ScreenPosition(fsp.x,fsp.y));
-          vertex.add(new ScreenPosition(fsp.x,fsp.y));
+      if (cs != null){
+         for (Cluster c : cs) {
+          if (cont == 0) {
+            ScreenPosition fsp = map.getScreenPosition(c.flightLocation);
+            //we need to add it twice as the first one is not going to appear on the screen
+            vertex.add(new ScreenPosition(fsp.x,fsp.y));
+            vertex.add(new ScreenPosition(fsp.x,fsp.y));
+          }
+          if (c != null) {
+            c.draw();
+            ScreenPosition v = new ScreenPosition(c.x, c.y);
+            vertex.add(v);
+            cont ++;
+          }
         }
-        c.draw();
-        ScreenPosition v = new ScreenPosition(c.x, c.y);
-        vertex.add(v);
-        cont ++;
       }
       
       noFill();
-      stroke(trafficColor);
+      //stroke(trafficColor);
+      int curveColor = (trafficColor & 0xffffff) | (255-100 << 24);
+      stroke(curveColor);
       strokeWeight(2);
       beginShape();
       cont = 0;
@@ -88,19 +129,23 @@ class ClustersPredictionHandler {
     for (int time=DELTA_T;time<=DELTA_T*N_STEPS;time=time+DELTA_T) {
       //println("time:"+str(time));
       Cluster c = this.ownshipClusters.get(time);
-      if (cont == 0) {
-          ScreenPosition osp = map.getScreenPosition(this.m.ownship.location);
-          vertex.add(new ScreenPosition(osp.x,osp.y));
-          vertex.add(new ScreenPosition(osp.x,osp.y));
+      if (c != null) {
+        
+        if (cont == 0) {
+            ScreenPosition osp = map.getScreenPosition(this.m.ownship.location);
+            vertex.add(new ScreenPosition(osp.x,osp.y));
+            vertex.add(new ScreenPosition(osp.x,osp.y));
+        }
+        c.draw();
+        ScreenPosition v = new ScreenPosition(c.x, c.y);
+        vertex.add(v);
+        cont ++;
       }
-      c.draw();
-      ScreenPosition v = new ScreenPosition(c.x, c.y);
-      vertex.add(v);
-      cont ++;
     }
     
     noFill();
-      stroke(color(0,255,0));
+      int curveColor = (trafficColor & 0xffffff) | (255-100 << 24);
+      stroke(curveColor);
       strokeWeight(2);
       beginShape();
       cont = 0;
@@ -120,10 +165,16 @@ class ClustersPredictionHandler {
     
   }
 
-  //should be done in a different thread
+  
   void drawPrediction() {
-    drawFlightPrediction();
-    drawOwnshipPrediction();
+    if (!this.mapClusters.isEmpty())
+      drawOwnshipPrediction();
+    
+    
+    if (!this.ownshipClusters.isEmpty())
+      drawFlightPrediction();
+    
+    
 
       
      //<>//
@@ -157,8 +208,12 @@ class ClustersPredictionHandler {
   }
 
   public void loadPrediction() {
-    
+    String flight_request = "flight_id="+this.flight.callsign;
+    println("ClustersPredictionHandler: loading json object from " + SERVER + PREDICTION_BRANCH + "?" + flight_request + "&deltaT=" + str(DELTA_T)+"&nsteps="+str(N_STEPS)+"&raw="+RAW+"&cluster="+CLUSTER);
+    this.prediction = loadJSONObject(SERVER + PREDICTION_BRANCH + "?" + flight_request + "&deltaT=" + str(DELTA_T)+"&nsteps="+str(N_STEPS)+"&raw="+RAW+"&cluster="+CLUSTER);
     println("inside load prediction");
+    this.ownshipClusters.clear();
+    this.mapClusters.clear();
   
     
     this.ownshipJClusters = prediction.getJSONArray("ownship");
@@ -186,6 +241,8 @@ class ClustersPredictionHandler {
         JSONObject j_cluster = times_and_clusters.getJSONObject(str(c_time));
         Cluster c = new Cluster(new Location(j_cluster.getFloat("lat"), j_cluster.getFloat("lon")), j_cluster.getFloat("h"), this.flight.location, this.m);
         c.uncertainty = j_cluster.getFloat("uncertainty");
+        c.dangerous = j_cluster.getBoolean("dangerous");
+        c.proximity = j_cluster.getFloat("proximity");
         c.horizon = c_time;
         if (this.mapClusters.containsKey(intent_group)) {
           this.mapClusters.get(intent_group).add(c);

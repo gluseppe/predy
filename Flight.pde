@@ -51,6 +51,12 @@ class Flight {
 //    this.predictionHandler = new PredictionHandler(map,this);
   }
   
+  public void loadPrediction() {
+    if (this.predictionHandler != null) {
+      this.predictionHandler.loadPrediction();
+    }
+  }
+  
   
   public void stopPrediction() {
     this.predictionActive = false;
@@ -169,6 +175,8 @@ class Flight {
     strokeWeight(2);
     float rot = getRot(heading-currentRot);
     float delta = altitude - m.ownship.altitude;
+    String sign = " ";
+    if (delta >= 0) sign = "+";
 
     pushMatrix();
     translate(x, y);
@@ -177,7 +185,8 @@ class Flight {
     
     text(callsign, 0+5, 0+trafficRadius+5);
     fill(ownshipColor);
-    text("@" + int(delta) + "ft", 0+5, 0+trafficRadius+LINESPACE);
+    
+    text("@" + sign + int(delta) + "ft", 0+5, 0+trafficRadius+LINESPACE);
     fill(usingColor);
     //text(callsign + " " + heading, 0, 0+trafficRadius+5);
     rotate(radians(rot));

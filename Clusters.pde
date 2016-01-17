@@ -7,7 +7,7 @@ class Cluster {
   int type = -1;
   int usingColor = -1;
 
-  float x,y,altitude,size,uncertainty;
+  float x,y,altitude,size,uncertainty,proximity;
   float bubble_radius;
   float end_x, end_y;
   float horizon;
@@ -15,6 +15,7 @@ class Cluster {
   float timeAlpha;
   float base_ring;
   color clusterColor;
+  boolean dangerous;
   
   //flightlocation is the location of the flight to which the cluster/particle belongs
   //it is needed for the animation, we use it as starting point of the animation
@@ -35,6 +36,8 @@ class Cluster {
     this.horizon = 0.0;
     this.base_ring = 0.0;
     this.clusterColor = ownshipColor;
+    this.dangerous = false;
+    this.proximity = -1.0;
     
     
   }
@@ -58,6 +61,8 @@ class Cluster {
     this.size = this.uncertainty / metersOfPixel();
     this.base_ring = WARNING_RADIUS / metersOfPixel();
     int alpha_sottraction = int((MAX_ALPHA_SOTTRACTION*this.uncertainty) / MAX_UNCERTAINTY);
+    println("alpha_sottraction:"+str(alpha_sottraction));
+    println("uncertainty:"+str(this.uncertainty));
     if (alpha_sottraction >= MAX_ALPHA_SOTTRACTION) alpha_sottraction = MAX_ALPHA_SOTTRACTION;
     //println("alpha sottraction:"+str(alpha_sottraction));
     this.clusterColor = (ownshipColor & 0xffffff) | (255-alpha_sottraction << 24);
@@ -90,14 +95,20 @@ class Cluster {
   void drawUncertaintyRing(float x, float y) {
     noFill();
     strokeWeight(clusterBorder + 2);
-    stroke(predictionColor);
+    if (this.dangerous)
+      stroke(dangerousColor);
+    else  
+      stroke(predictionColor);
     ellipse(x,y,this.bubble_radius,this.bubble_radius);
   }
   
   void drawTimeIndication(float x, float y) {
     fill(color(0,255,0,timeAlpha));
     strokeWeight(2);
+    textSize(18);
     text(int(this.horizon) + "secs", x+5, y+clusterRadius);
+    text(int(this.proximity) + "m", x+5, y+clusterRadius+18);
+    textSize(12);
   }
    
   
@@ -107,7 +118,15 @@ class Cluster {
     
      
     //fill(ownshipColor);
-    fill(this.clusterColor);
+    int current_color = clusterColor;
+    if (this.dangerous)
+      current_color = dangerousColor;
+    
+    fill(current_color);
+    //if (this.dangerous)
+    //  stroke(dangerousColor);
+    //else
+    //  stroke(predictionColor);
     stroke(predictionColor);
     strokeWeight(clusterBorder);
     //ellipse(x, y, clusterRadius, clusterRadius);

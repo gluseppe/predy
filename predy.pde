@@ -68,6 +68,7 @@ void draw() {
   //requests are launched as different threads
 
   map.draw();
+  //drawScenario();
 
   drawCursor();
   if (!sagatMode)
@@ -80,6 +81,69 @@ void draw() {
 
 
 //TOP LEVEL FUNCTIONS
+//only use this to prepare scenarios, not for experiments
+void drawScenario() {
+  /*
+  lfpd
+   "lat": 49.102778, 
+   "lon": 0.566667, 
+  */
+  Location lfpd = new Location(49.102778,0.566667); 
+  ScreenPosition sp = map.getScreenPosition(lfpd);
+  fill(color(0,0,255));
+  ellipse(sp.x,sp.y,20,20);
+  text("lfpd",sp.x,sp.y-30);
+  
+  
+  /*
+    "_icao": "LFOL",
+    "lat": 48.758333, 
+    "lon": 0.656667, 
+  */  
+  Location lfol = new Location(48.758333,0.656667); 
+  sp = map.getScreenPosition(lfol);
+  fill(color(0,0,255));
+  ellipse(sp.x,sp.y,20,20);
+  text("lfol",sp.x,sp.y-30);
+  
+  /*
+            "_icao": "LFOE",
+            "lat": 49.018333, 
+            "lon": 1.206667, 
+  */  
+  Location lfoe = new Location(49.018333,1.206667); 
+  sp = map.getScreenPosition(lfoe);
+  fill(color(0,0,255));
+  ellipse(sp.x,sp.y,20,20);
+  text("lfoe",sp.x,sp.y-30);
+  
+  /*
+              "_icao": "LFPZ",
+            "lat": 48.813681, 
+            "lon": 2.066481,   
+  */
+  Location lfpz = new Location(48.813681,2.066481); 
+  sp = map.getScreenPosition(lfpz);
+  fill(color(0,0,255));
+  ellipse(sp.x,sp.y,20,20);
+  text("lfpz",sp.x,sp.y-30);
+  
+  /*
+             "_icao": "LFON",
+            "lat": 48.705956, 
+            "lon": 1.361618, 
+            "h": 2000
+  */
+  Location lfon = new Location(48.705956,1.361618); 
+  sp = map.getScreenPosition(lfon);
+  fill(color(0,0,255));
+  ellipse(sp.x,sp.y,20,20);
+  text("lfon",sp.x,sp.y-30);
+  
+  
+  
+  
+}
 
 void drawCursor() {
   Location location = map.getLocation(mouseX, mouseY);
@@ -109,7 +173,11 @@ void updateUIIfNeeded() {
   if (this.ownship !=null)
   {
     Location loc = this.ownship.location;
-    map.panTo(loc);
+    ScreenPosition sp = map.getScreenPosition(loc);
+    sp.y = sp.y - 250;
+    Location center_map = map.getLocation(sp);
+    
+    map.panTo(center_map);
     drawOwnship(this.ownship, "ownship");
     drawTraffic();
     rotateMap(this.ownship);
@@ -285,6 +353,14 @@ void requestOwnship() {
 
 void requestPrediction() {
 } //<>//
+
+void loadPredictionBridge() {
+  if (predictionActiveFor != null) {
+             Flight f = traffic.get(predictionActiveFor);
+             f.loadPrediction();
+             
+  }
+}
 
 //END THREAD FUNCTIONS
 

@@ -29,9 +29,10 @@ String CLUSTER = "true";
   int ownshipColor = magenta;
   int trafficColor = green;
   int predictionColor = color(0,140,0,trafficAlpha);
+  int dangerousColor = color(255, 0, 0);
   
-  int MAX_ALPHA_SOTTRACTION = 150;
-  int MAX_UNCERTAINTY = 5000;
+  int MAX_ALPHA_SOTTRACTION = 200;
+  int MAX_UNCERTAINTY = 3000;
 
   //SHAPES AND DIMENSIONS
   float trafficRadius = 15;
